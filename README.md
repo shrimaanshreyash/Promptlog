@@ -34,7 +34,7 @@ Two ways to get PromptLog. Pick one.
 **A. CLI (npm / GitHub)** — the standalone `plog` command:
 
 ```bash
-npm install -g https://github.com/shrimaanshreyash/Promptlog/archive/refs/heads/main.tar.gz
+npm install -g @srimaanshreyas/plog
 ```
 
 **B. Claude Code plugin** — adds a `/plog` command inside Claude Code:
