@@ -34,7 +34,7 @@
     "build:cli": "tsc",
     "build:ui": "cd ui && npm run build",
     "dev": "tsx src/index.ts",
-    "prepare": "npm run build:cli",
+    "prepare": "node ./node_modules/typescript/bin/tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build"
