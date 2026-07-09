@@ -13,7 +13,7 @@ Arguments: `$ARGUMENTS`
 1. **Check the CLI is installed.** Run `plog --version`.
    - If it is missing (command not found), tell the user to install it once and stop:
      ```
-     npm install -g github:shrimaanshreyash/Promptlog
+     npm install -g https://github.com/shrimaanshreyash/Promptlog/archive/refs/heads/main.tar.gz
      ```
      Do not attempt any other install method.
 
