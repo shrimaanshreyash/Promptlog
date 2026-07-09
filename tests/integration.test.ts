@@ -83,6 +83,24 @@ export const AGENT_PROMPTS: Record<string, string> = {
     expect(output).toContain('Confirmed: 2');
   });
 
+  it('tracks record prompt changes after nested template expressions', () => {
+    writePromptFile(testDir, 'drafts.ts', `
+export const stylePrompts: Record<string, string> = {
+  guide: \`Write a guide about \${topic}\${brandName ? \` for \${brandName}\` : ''}. Include sections and tips.\`,
+};
+`);
+    run('init', testDir);
+
+    writePromptFile(testDir, 'drafts.ts', `
+export const stylePrompts: Record<string, string> = {
+  guide: \`Write a guide about \${topic}\${brandName ? \` for \${brandName}\` : ''}. Include sections, tips, and placeholders for missing proof.\`,
+};
+`);
+    const output = run('scan', testDir);
+    expect(output).toContain('[CHG]');
+    expect(output).toContain('v2');
+  });
+
   it('scan detects prompt builder functions', () => {
     writePromptFile(testDir, 'builders.ts', `
 export function createSummaryPrompt(doc: string): string {
@@ -92,6 +110,30 @@ export function createSummaryPrompt(doc: string): string {
     run('init', testDir);
     const output = run('scan', testDir);
     expect(output).toContain('Confirmed: 1');
+  });
+
+  it('tracks builder prompt changes after nested template expressions', () => {
+    writePromptFile(testDir, 'builders.ts', `
+export function buildReportPrompt(request: { brandName: string; industry?: string }) {
+  return \`Generate a professional report for "\${request.brandName}".
+\${request.industry ? \`Industry: \${request.industry}\` : ''}
+
+Return JSON with summary and recommendations.\`;
+}
+`);
+    run('init', testDir);
+
+    writePromptFile(testDir, 'builders.ts', `
+export function buildReportPrompt(request: { brandName: string; industry?: string }) {
+  return \`Generate a professional report for "\${request.brandName}".
+\${request.industry ? \`Industry: \${request.industry}\` : ''}
+
+Return JSON with summary, recommendations, and a ranked actionPlan.\`;
+}
+`);
+    const output = run('scan', testDir);
+    expect(output).toContain('[CHG]');
+    expect(output).toContain('v2');
   });
 
   it('does not detect non-prompt strings', () => {

@@ -857,11 +857,14 @@ function detectPromptRecordObjects(prompts: RawPrompt[], slug: string, lang: str
     }
     const objBody = content.substring(objStart, objEnd);
 
-    const valRx = /(?:(\w+)|(\d+)|['"]([^'"]+)['"])\s*:\s*`([\s\S]*?)`/g;
+    const valRx = /(?:(\w+)|(\d+)|['"]([^'"]+)['"])\s*:\s*`/g;
     let vm: RegExpExecArray | null;
     while ((vm = valRx.exec(objBody)) !== null) {
       const key = vm[1] || vm[2] || vm[3];
-      const val = vm[4].trim();
+      const extracted = extractTemplateLiteral(objBody, vm.index + vm[0].length);
+      if (!extracted) continue;
+      valRx.lastIndex = vm.index + vm[0].length + extracted.length + 1;
+      const val = extracted.trim();
       if (val.length < 30) continue;
       const sl = lineAt(content, m.index + vm.index);
       const sn = `${slug}::${varName}_${key}`;
@@ -902,9 +905,11 @@ function detectPromptBuilders(prompts: RawPrompt[], slug: string, lang: string, 
     const fnBody = content.substring(bodyStart, bodyEnd);
 
     // Find return template literal — get the FIRST return with backtick
-    const returnMatch = fnBody.match(/return\s*`([\s\S]*?)`/);
+    const returnMatch = /return\s*`/.exec(fnBody);
     if (!returnMatch) continue;
-    const val = returnMatch[1].trim();
+    const extracted = extractTemplateLiteral(fnBody, returnMatch.index + returnMatch[0].length);
+    if (!extracted) continue;
+    const val = extracted.trim();
     if (val.length < 30) continue;
     const sl = lineAt(content, m.index);
     const sn = `${slug}::${fnName}`;
