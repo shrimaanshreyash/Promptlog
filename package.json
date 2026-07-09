@@ -34,7 +34,6 @@
     "build:cli": "tsc",
     "build:ui": "cd ui && npm run build",
     "dev": "tsx src/index.ts",
-    "prepare": "node ./node_modules/typescript/bin/tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build"
@@ -59,14 +58,5 @@
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
-  },
-  "files": [
-    "dist/",
-    "src/",
-    "ui/dist/",
-    "ui/src/",
-    "tsconfig.json",
-    "LICENSE",
-    "README.md"
-  ]
+  }
 }
