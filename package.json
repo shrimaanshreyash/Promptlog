@@ -1,0 +1,70 @@
+{
+  "name": "@shrimaanshreyash/plog",
+  "version": "0.1.0",
+  "description": "Permanent prompt memory, visual diffs, and human notes for AI applications.",
+  "author": "Srimaan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shrimaanshreyash/Promptlog.git"
+  },
+  "homepage": "https://github.com/shrimaanshreyash/Promptlog#readme",
+  "keywords": [
+    "prompt",
+    "llm",
+    "ai",
+    "diff",
+    "version-control",
+    "prompt-engineering",
+    "prompt-management",
+    "openai",
+    "anthropic",
+    "langchain"
+  ],
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "plog": "dist/index.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc && cd ui && npm run build",
+    "build:cli": "tsc",
+    "build:ui": "cd ui && npm run build",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "chokidar": "^5.0.0",
+    "commander": "^14.0.3",
+    "cors": "^2.8.6",
+    "diff": "^9.0.0",
+    "express": "^5.2.1",
+    "glob": "^13.0.6",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/diff": "^7.0.2",
+    "@types/express": "^5.0.6",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^25.9.1",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^10.4.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7",
+    "tsx": "^4.22.3"
+  },
+  "files": [
+    "dist/",
+    "ui/dist/",
+    "LICENSE",
+    "README.md"
+  ]
+}

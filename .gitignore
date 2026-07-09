@@ -1,0 +1,27 @@
+node_modules/
+*.js.map
+*.d.ts
+*.d.ts.map
+.promptlog/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+tsconfig.json.tmp
+
+# UI
+ui/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# graphify artifacts
+.graphify_python
+graphify-out/

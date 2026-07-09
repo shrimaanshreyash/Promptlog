@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "promptlog",
+  "description": "Permanent prompt memory, visual diffs, and human notes for AI apps. Track every prompt change as a versioned snapshot from inside Claude Code.",
+  "owner": {
+    "name": "Srimaan Shreyash",
+    "url": "https://github.com/shrimaanshreyash"
+  },
+  "plugins": [
+    {
+      "name": "plog",
+      "description": "Run PromptLog from inside Claude Code: scan a project for LLM prompts, track versions, diff changes, and manage notes.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
