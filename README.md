@@ -1,4 +1,4 @@
-# PromptLog
+<img src=".github/assets/banner.png" alt="PromptLog" width="100%">
 
 [![CI](https://github.com/shrimaanshreyash/Promptlog/actions/workflows/ci.yml/badge.svg)](https://github.com/shrimaanshreyash/Promptlog/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
