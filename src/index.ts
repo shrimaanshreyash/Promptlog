@@ -17,6 +17,7 @@ import { rollback } from './commands/rollback.js';
 import { showStatus } from './commands/status.js';
 import { configGet, configSet } from './commands/config.js';
 import { addPromptManually } from './commands/add.js';
+import { showInventory } from './commands/inventory.js';
 
 const program = new Command();
 const packagePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
@@ -186,6 +187,16 @@ program.command('status')
     const config = initConfig(projectRoot);
     initDb(projectRoot);
     showStatus(config.ui.defaultPort);
+  });
+
+program.command('inventory')
+  .description('List tracked prompts and their current source locations.')
+  .option('--json', 'Output machine-readable JSON without prompt content')
+  .action((options) => {
+    const projectRoot = process.cwd();
+    initConfig(projectRoot);
+    initDb(projectRoot);
+    showInventory(options);
   });
 
 // ─── diff ─────────────────────────────────────────────────────────────────────

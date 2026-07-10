@@ -9,8 +9,12 @@
   "plugins": [
     {
       "name": "plog",
-      "description": "Run PromptLog from inside Claude Code: scan a project for LLM prompts, track versions, diff changes, and manage notes.",
-      "source": "./",
+      "description": "Run PromptLog from Claude Code with deterministic scanning, semantic prompt auditing, version history, diffs, and notes.",
+      "source": {
+        "source": "npm",
+        "package": "@srimaanshreyas/plog",
+        "version": "0.1.4"
+      },
       "category": "productivity"
     }
   ]

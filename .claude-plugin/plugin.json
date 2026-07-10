@@ -1,7 +1,7 @@
 {
   "name": "plog",
-  "version": "0.1.3",
-  "description": "Permanent prompt memory, visual diffs, and human notes for AI apps. Wraps the plog CLI as a /plog slash command.",
+  "version": "0.1.4",
+  "description": "Track and audit LLM prompts from Claude Code with deterministic scanning, repository-aware review, visual diffs, and human notes.",
   "author": {
     "name": "Srimaan Shreyash",
     "url": "https://github.com/shrimaanshreyash"

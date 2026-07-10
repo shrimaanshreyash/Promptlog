@@ -31,22 +31,51 @@ Prompts are the most important part of your AI app, but they live as strings in 
 
 ## Install
 
-Two ways to get PromptLog. Pick one.
+Choose the interface you use. Both run the same local PromptLog engine and keep project history under `.promptlog/`.
 
-**A. CLI (npm / GitHub)** — the standalone `plog` command:
+### CLI
+
+Install the standalone `plog` command:
 
 ```bash
 npm install -g @srimaanshreyas/plog
 ```
 
-**B. Claude Code plugin** — adds a `/plog` command inside Claude Code:
+### Claude Code Plugin
+
+Add the custom marketplace and install PromptLog:
 
 ```
 /plugin marketplace add shrimaanshreyash/Promptlog
-/plugin install plog
+/plugin install plog@promptlog
+/reload-plugins
 ```
 
-The plugin drives the same `plog` CLI, so install option A too if you want to run it from Claude Code.
+The plugin includes its own CLI runtime. A separate global npm installation is not required for Claude Code usage.
+
+Run the namespaced command from any project:
+
+```text
+/plog:plog init
+/plog:plog scan
+/plog:plog audit
+```
+
+- `init` creates the local database, performs the first deterministic scan, and runs a repository-aware semantic audit.
+- `scan` records deterministic changes and then compares that inventory with prompt-bearing values traced from real model calls.
+- `audit` reruns only the Claude semantic comparison. It reports missed and uncertain prompt surfaces and asks before manually registering anything.
+
+The same command accepts every CLI operation, for example `/plog:plog status`, `/plog:plog diff <id> --latest`, and `/plog:plog note <id> ...`. A plain-language request such as `/plog:plog check what changed` is mapped to the closest action.
+
+To update an existing installation:
+
+```text
+/plugin marketplace update promptlog
+/plugin update plog@promptlog
+/reload-plugins
+```
+
+Prompt contents are not sent to a separate PromptLog service. The deterministic scanner is local; the optional semantic audit uses the active Claude Code session and respects the project intelligence settings in `.promptlog/config.json`.
 
 ## Quick Start
 
@@ -74,6 +103,7 @@ plog watch
 | `plog watch` | Watch files and auto-detect prompt changes |
 | `plog ui` | Start the local dashboard (default: port 4319) |
 | `plog status` | Show prompt counts and recent activity |
+| `plog inventory [--json]` | List tracked prompt locations without exposing prompt content |
 | `plog diff <id>` | Show word-level diff between prompt versions |
 | `plog note <id>` | Add a human note to a prompt version |
 | `plog notes <id>` | List all notes for a prompt (supports `--type`, `--severity`, `--version` filters) |

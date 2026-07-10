@@ -234,6 +234,28 @@ export const reviewPrompt = \`Review the supplied document and return detailed f
     expect(output).toContain('Active:        1');
   });
 
+  it('inventory emits prompt locations as JSON without prompt content', () => {
+    const promptText = 'You are a private inventory test assistant. Always return valid JSON.';
+    writePromptFile(testDir, 'prompts.ts', `export const systemPrompt = \`${promptText}\`;`);
+    run('init', testDir);
+
+    const inventory = JSON.parse(run('inventory --json', testDir)) as {
+      initialized: boolean;
+      summary: { total: number; active: number };
+      prompts: Array<{ stableName: string; sourceFile: string; startLine: number; endLine: number }>;
+    };
+
+    expect(inventory.initialized).toBe(true);
+    expect(inventory.summary).toMatchObject({ total: 1, active: 1 });
+    expect(inventory.prompts[0]).toMatchObject({
+      stableName: 'prompts::systemPrompt',
+      sourceFile: 'src/prompts.ts',
+      startLine: 1,
+      endLine: 1,
+    });
+    expect(JSON.stringify(inventory)).not.toContain(promptText);
+  });
+
   it('diff shows changes between versions', () => {
     writePromptFile(testDir, 'prompts.ts', 'export const systemPrompt = `You are helpful. Always respond.`;');
     run('init', testDir);
