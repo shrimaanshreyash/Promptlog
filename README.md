@@ -1,9 +1,11 @@
 <p align="center"><img src=".github/assets/banner.png" alt="PromptLog" width="100%"></p>
 
-[![CI](https://github.com/shrimaanshreyash/Promptlog/actions/workflows/ci.yml/badge.svg)](https://github.com/shrimaanshreyash/Promptlog/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D22.13-brightgreen.svg)](https://nodejs.org)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+<p align="center">
+<a href="https://github.com/shrimaanshreyash/Promptlog/actions/workflows/ci.yml"><img src="https://github.com/shrimaanshreyash/Promptlog/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+<a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D22.13-brightgreen.svg" alt="Node.js"></a>
+<a href="./CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+</p>
 
 Permanent prompt memory, visual diffs, and human notes for AI applications.
 
