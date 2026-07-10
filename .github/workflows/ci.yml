@@ -17,15 +17,19 @@ jobs:
         node-version: [22]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+          package-manager-cache: false
 
       - name: Install backend dependencies
         run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
 
       - name: Build backend
         run: npx tsc
@@ -36,6 +40,10 @@ jobs:
       - name: Install UI dependencies
         working-directory: ui
         run: npm ci
+
+      - name: Audit UI dependencies
+        working-directory: ui
+        run: npm audit
 
       - name: Lint UI
         working-directory: ui
