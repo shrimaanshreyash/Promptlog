@@ -191,6 +191,14 @@ export function startServer(projectRoot, config, port, host = '127.0.0.1') {
         if (!title && !body) {
             return res.status(400).json({ error: 'Note must have a title or body.' });
         }
+        const prompt = db.prepare('SELECT id FROM prompts WHERE id = ?').get(req.params.id);
+        if (!prompt) {
+            return res.status(404).json({ error: 'Prompt not found.' });
+        }
+        const version = db.prepare('SELECT id FROM prompt_versions WHERE id = ? AND prompt_id = ?').get(req.params.versionId, req.params.id);
+        if (!version) {
+            return res.status(404).json({ error: 'Target version not found for this prompt.' });
+        }
         const noteId = uuidv4();
         db.prepare(`
       INSERT INTO prompt_notes (id, prompt_id, version_id, note_type, title, body, severity, created_by)

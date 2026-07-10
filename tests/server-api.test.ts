@@ -97,6 +97,25 @@ describe('Server API', { timeout: 30000 }, () => {
     expect(data.note.title).toBe('Test note');
   });
 
+  it('POST /api/prompts/:id/versions/:vid/notes rejects versions from another prompt', async () => {
+    const prompts = await fetchApi('/api/prompts');
+    expect(prompts.prompts.length).toBeGreaterThanOrEqual(2);
+    const promptId = prompts.prompts[0].id;
+    const otherPromptId = prompts.prompts[1].id;
+    const otherVersions = await fetchApi(`/api/prompts/${otherPromptId}/versions`);
+    const otherVersionId = otherVersions.versions[0].id;
+
+    const response = await fetch(`http://127.0.0.1:${port}/api/prompts/${promptId}/versions/${otherVersionId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Wrong target', body: 'Should not save' }),
+    });
+    const data = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(data.error).toContain('Target version not found');
+  });
+
   it('GET /api/prompts/:id/notes returns notes', async () => {
     const prompts = await fetchApi('/api/prompts');
     const promptId = prompts.prompts[0].id;

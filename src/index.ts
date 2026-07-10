@@ -20,7 +20,7 @@ const program = new Command();
 program
   .name('plog')
   .description('Permanent prompt memory, visual diffs, and human notes for AI applications.')
-  .version('0.1.0')
+  .version('0.1.1')
   .option('-v, --verbose', 'Enable verbose output')
   .option('-q, --quiet', 'Suppress non-essential output');
 
@@ -56,7 +56,7 @@ program.command('init')
       db.prepare(`
         INSERT INTO projects (id, name, root_path, promptlog_version)
         VALUES (?, ?, ?, ?)
-      `).run(projectId, config.project.name, projectRoot, '0.1.0');
+      `).run(projectId, config.project.name, projectRoot, '0.1.1');
       db.prepare(`
         INSERT INTO prompt_events (id, project_id, event_type, created_by)
         VALUES (?, ?, ?, ?)

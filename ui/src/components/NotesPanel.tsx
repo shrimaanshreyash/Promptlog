@@ -41,6 +41,15 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
   const [noteType, setNoteType] = useState('general_note');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const readJsonResponse = async (response: Response) => {
+    const text = await response.text();
+    try {
+      return text ? JSON.parse(text) : {};
+    } catch {
+      return { error: text || response.statusText || 'Unexpected server response.' };
+    }
+  };
+
   const fetchNotes = async () => {
     setLoading(true);
     setError(null);
@@ -64,15 +73,21 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
   }, [promptId]);
 
   useEffect(() => {
-    if (versions.length > 0 && !targetVersionId) {
+    if (versions.length > 0 && !versions.some(v => v.id === targetVersionId)) {
       setTargetVersionId(versions[0].id); // Default to latest version
+    } else if (versions.length === 0) {
+      setTargetVersionId('');
     }
-  }, [versions]);
+  }, [versions, targetVersionId]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title && !body) {
       setError('Note must have a title or body.');
+      return;
+    }
+    if (!targetVersionId) {
+      setError('No prompt version is loaded yet. Select the prompt again or wait for versions to load.');
       return;
     }
     setError(null);
@@ -82,11 +97,11 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note_type: noteType, title, body, severity }),
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (response.ok) {
         setIsEditing(null);
         resetForm();
-        fetchNotes();
+        await fetchNotes();
       } else {
         setError(data.error || 'Failed to create note.');
       }
@@ -107,11 +122,11 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note_type: noteType, title, body, severity }),
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (response.ok) {
         setIsEditing(null);
         resetForm();
-        fetchNotes();
+        await fetchNotes();
       } else {
         setError(data.error || 'Failed to update note.');
       }
@@ -127,9 +142,9 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
       const response = await fetch(`/api/notes/${noteId}`, {
         method: 'DELETE',
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (response.ok && data.success) {
-        fetchNotes();
+        await fetchNotes();
       } else {
         setError(data.error || 'Failed to delete note.');
       }
@@ -185,10 +200,10 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ noteIds: Array.from(selectedIds) }),
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (response.ok && data.success) {
         setSelectedIds(new Set());
-        fetchNotes();
+        await fetchNotes();
       } else {
         setError(data.error || 'Bulk delete failed.');
       }
@@ -253,7 +268,7 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
 
               <div className="form-actions">
                 <ActionButton type="button" variant="pink" onClick={() => setIsEditing(null)}>ABORT</ActionButton>
-                <ActionButton type="submit" variant="lime">SAVE NOTE</ActionButton>
+                <ActionButton type="submit" variant="lime" disabled={isEditing === 'new' && !targetVersionId}>SAVE NOTE</ActionButton>
               </div>
             </form>
           ) : (

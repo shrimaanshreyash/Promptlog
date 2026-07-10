@@ -30,6 +30,9 @@ export const VersionCard: React.FC<VersionCardProps> = ({
   const [copied, setCopied] = useState(false);
 
   const gitDirty = version.git_dirty_state === 1;
+  const displayAuthor = version.git_author
+    ? version.git_author.replace(/^([^@\s]+)@[^@\s]+$/, '$1@...')
+    : null;
 
   return (
     <div className={`version-card-wrapper ${collapsed ? 'is-collapsed' : 'is-expanded'}`}>
@@ -53,7 +56,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
                 <>
                   <div>COMMIT: <span className="text-highlight">{version.git_commit.slice(0, 7)}</span> {gitDirty && <span className="badge-dirty">DIRTY STATE</span>}</div>
                   <div>BRANCH: <span className="text-highlight">{version.git_branch}</span></div>
-                  <div>AUTHOR: <span className="text-highlight">{version.git_author}</span></div>
+                  {displayAuthor && <div>AUTHOR: <span className="text-highlight">{displayAuthor}</span></div>}
                 </>
               )}
             </div>
