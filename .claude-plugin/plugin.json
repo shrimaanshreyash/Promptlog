@@ -1,6 +1,6 @@
 {
   "name": "plog",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Permanent prompt memory, visual diffs, and human notes for AI apps. Wraps the plog CLI as a /plog slash command.",
   "author": {
     "name": "Srimaan Shreyash",

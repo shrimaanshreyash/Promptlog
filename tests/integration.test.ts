@@ -38,6 +38,18 @@ describe('CLI integration', () => {
     expect(fs.existsSync(path.join(testDir, '.promptlog', 'promptlog.sqlite'))).toBe(true);
   });
 
+  it('init adds .promptlog to .gitignore for git projects', () => {
+    fs.mkdirSync(path.join(testDir, '.git'), { recursive: true });
+    fs.writeFileSync(path.join(testDir, '.gitignore'), 'node_modules/\n', 'utf8');
+    writePromptFile(testDir, 'prompts.ts', 'export const systemPrompt = `You are a helpful assistant. Always respond accurately.`;');
+
+    run('init', testDir);
+
+    const gitignore = fs.readFileSync(path.join(testDir, '.gitignore'), 'utf8');
+    expect(gitignore).toContain('node_modules/');
+    expect(gitignore).toContain('.promptlog/');
+  });
+
   it('scan detects JS/TS prompt variables', () => {
     writePromptFile(testDir, 'prompts.ts', `
 export const systemPrompt = \`You are a helpful assistant.

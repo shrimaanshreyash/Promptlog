@@ -2,6 +2,8 @@
 import { Command } from 'commander';
 import { v4 as uuidv4 } from 'uuid';
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 import { initDb } from './db/sqlite.js';
 import { initConfig } from './config.js';
 import { scanProject } from './scanner/index.js';
@@ -20,7 +22,7 @@ const program = new Command();
 program
   .name('plog')
   .description('Permanent prompt memory, visual diffs, and human notes for AI applications.')
-  .version('0.1.1')
+  .version('0.1.2')
   .option('-v, --verbose', 'Enable verbose output')
   .option('-q, --quiet', 'Suppress non-essential output');
 
@@ -36,6 +38,27 @@ function setLogLevel() {
   }
 }
 
+function ensurePromptLogIgnored(projectRoot: string): 'added' | 'present' | 'skipped' {
+  const gitDir = path.join(projectRoot, '.git');
+  const gitignorePath = path.join(projectRoot, '.gitignore');
+  if (!fs.existsSync(gitDir) && !fs.existsSync(gitignorePath)) {
+    return 'skipped';
+  }
+
+  const entry = '.promptlog/';
+  const existing = fs.existsSync(gitignorePath)
+    ? fs.readFileSync(gitignorePath, 'utf8')
+    : '';
+  const lines = existing.split(/\r?\n/).map(line => line.trim());
+  if (lines.some(line => line === '.promptlog' || line === '.promptlog/' || line === '.promptlog/**')) {
+    return 'present';
+  }
+
+  const prefix = existing.length > 0 && !existing.endsWith('\n') ? '\n' : '';
+  fs.appendFileSync(gitignorePath, `${prefix}${entry}\n`, 'utf8');
+  return 'added';
+}
+
 // ─── init ─────────────────────────────────────────────────────────────────────
 program.command('init')
   .description('Initialize PromptLog in the current project.')
@@ -47,6 +70,13 @@ program.command('init')
     const config = initConfig(projectRoot);
     console.log('✅  Config created at .promptlog/config.json');
 
+    const gitignoreStatus = ensurePromptLogIgnored(projectRoot);
+    if (gitignoreStatus === 'added') {
+      console.log('✅  Added .promptlog/ to .gitignore');
+    } else if (gitignoreStatus === 'present') {
+      console.log('ℹ️   .promptlog/ already ignored by git');
+    }
+
     const db = initDb(projectRoot);
     console.log('✅  SQLite database initialized');
 
@@ -56,7 +86,7 @@ program.command('init')
       db.prepare(`
         INSERT INTO projects (id, name, root_path, promptlog_version)
         VALUES (?, ?, ?, ?)
-      `).run(projectId, config.project.name, projectRoot, '0.1.1');
+      `).run(projectId, config.project.name, projectRoot, '0.1.2');
       db.prepare(`
         INSERT INTO prompt_events (id, project_id, event_type, created_by)
         VALUES (?, ?, ?, ?)
