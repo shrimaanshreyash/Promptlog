@@ -32,7 +32,7 @@ jobs:
         run: npm audit --omit=dev
 
       - name: Build backend
-        run: npx tsc
+        run: npm run build:cli
 
       - name: Verify CLI works
         run: node dist/index.js --version

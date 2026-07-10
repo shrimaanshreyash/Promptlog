@@ -477,8 +477,10 @@ export function startServer(projectRoot, config, port, host = '127.0.0.1') {
         });
     });
     // ─── Serve compiled UI ────────────────────────────────────────────────────
-    const __cliDir = path.dirname(fileURLToPath(import.meta.url));
-    const uiPath = path.join(__cliDir, '..', '..', 'ui', 'dist');
+    const cliDir = path.dirname(fileURLToPath(import.meta.url));
+    const packageRoot = [cliDir, path.join(cliDir, '..'), path.join(cliDir, '..', '..')]
+        .find(candidate => fs.existsSync(path.join(candidate, 'package.json')));
+    const uiPath = path.join(packageRoot ?? path.join(cliDir, '..', '..'), 'ui', 'dist');
     if (fs.existsSync(uiPath)) {
         app.use(express.static(uiPath));
         app.use((req, res, next) => {

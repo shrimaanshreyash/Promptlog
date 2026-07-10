@@ -1,6 +1,6 @@
 {
   "name": "plog",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Track and audit LLM prompts from Claude Code with deterministic scanning, repository-aware review, visual diffs, and human notes.",
   "author": {
     "name": "Srimaan Shreyash",
