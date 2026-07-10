@@ -18,6 +18,7 @@ Prompts are the most important part of your AI app, but they live as strings in 
 ## Features
 
 - **Auto-detection** — Scans JS/TS, Python, YAML, JSON, Markdown, and `.env` files for prompts using 8+ detection layers
+- **Claude semantic audit** — The Claude Code plugin traces values from real model calls, compares them with the local inventory, and asks before registering anything the deterministic scanner missed
 - **Version tracking** — Every prompt change creates a new version with content hash, git metadata, and file location
 - **Visual diffs** — Word-level diffs between any two versions, in the CLI or the dashboard
 - **File watcher** — Real-time monitoring with incremental scanning on save
