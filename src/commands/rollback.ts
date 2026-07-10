@@ -3,6 +3,7 @@ import { computeDiff } from '../diff/engine.js';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { applyPromptRollback, safePatchFileName } from '../rollback/apply.js';
 
 export function rollback(promptId: string, versionArg: string, options: { output?: string; apply?: boolean }) {
   const db = getDb();
@@ -44,7 +45,7 @@ export function rollback(promptId: string, versionArg: string, options: { output
     `--- Rollback Patch: ${prompt.stable_name}`,
     `--- Generated:      ${new Date().toISOString()}`,
     `--- Restore to:     v${versionNum} (from v${currentVersion?.version_number ?? '?'})`,
-    `--- Source file:    ${targetVersion.source_file}`,
+    `--- Source file:    ${currentVersion?.source_file ?? targetVersion.source_file}`,
     `--- Snapshot:       ${targetVersion.snapshot_path ?? 'N/A'}`,
     ``,
     `=== DIFF SUMMARY ===`,
@@ -63,7 +64,7 @@ export function rollback(promptId: string, versionArg: string, options: { output
   const patchDir = path.join(projectRoot, '.promptlog', 'patches');
   fs.mkdirSync(patchDir, { recursive: true });
 
-  const patchFileName = `${prompt.stable_name.replace(/[^a-z0-9._-]/gi, '-')}-v${versionNum}.patch`;
+  const patchFileName = safePatchFileName(prompt.stable_name, versionNum);
   const patchPath = path.join(patchDir, patchFileName);
 
   if (options.output) {
@@ -72,15 +73,9 @@ export function rollback(promptId: string, versionArg: string, options: { output
     fs.writeFileSync(outPath, newContent, 'utf8');
     console.log(`✅  Rollback content written to: ${outPath}`);
   } else if (options.apply) {
-    // Apply directly to source file
-    const sourceFile = path.join(projectRoot, targetVersion.source_file);
-    if (!fs.existsSync(sourceFile)) {
-      console.error(`❌  Source file not found: ${sourceFile}`);
-      process.exit(1);
-    }
-    fs.writeFileSync(sourceFile, newContent, 'utf8');
+    const applied = applyPromptRollback(projectRoot, currentVersion, targetVersion);
     fs.writeFileSync(patchPath, patchContent, 'utf8');
-    console.log(`✅  Applied rollback to: ${sourceFile}`);
+    console.log(`✅  Applied rollback to: ${applied.relativeSourceFile}:${applied.startLine}-${applied.endLine}`);
     console.log(`📄  Patch saved to: ${patchPath}`);
     console.log(`\n⚠️  Re-run 'plog scan' to record the restored version.`);
   } else {

@@ -1,5 +1,5 @@
 import { getDb } from '../db/sqlite.js';
-export function showStatus(projectRoot) {
+export function showStatus(defaultPort) {
     const db = getDb();
     const project = db.prepare('SELECT * FROM projects LIMIT 1').get();
     if (!project) {
@@ -35,7 +35,7 @@ export function showStatus(projectRoot) {
     console.log(`║    Removed:       ${String(removed).padEnd(22)}║`);
     console.log(`║  Versions total:  ${String(versions).padEnd(22)}║`);
     console.log(`║  Unnoted changes: ${String(unnoted).padEnd(22)}║`);
-    console.log(`║  Dashboard:       ${'http://localhost:4319'.padEnd(22)}║`);
+    console.log(`║  Dashboard:       ${`http://localhost:${defaultPort}`.padEnd(22)}║`);
     console.log('╠══════════════════════════════════════════╣');
     console.log('║  Recent Activity:                        ║');
     if (recentEvents.length === 0) {

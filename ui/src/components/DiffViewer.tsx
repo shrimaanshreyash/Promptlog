@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { errorMessage } from '../types';
+import type { DiffResponse, PromptVersion } from '../types';
 
 interface DiffViewerProps {
   promptId: string;
-  versions: Array<{ id: string; version_number: number }>;
+  versions: PromptVersion[];
 }
 
 export const DiffViewer: React.FC<DiffViewerProps> = ({ promptId, versions }) => {
   const [fromVersion, setFromVersion] = useState<number | ''>('');
   const [toVersion, setToVersion] = useState<number | ''>('');
-  const [diffData, setDiffData] = useState<any>(null);
+  const [diffData, setDiffData] = useState<DiffResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +21,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ promptId, versions }) =>
     setDiffData(null);
   }, [promptId]);
 
-  const fetchDiff = async () => {
+  const fetchDiff = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -28,7 +30,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ promptId, versions }) =>
         url += `?from=v${fromVersion}&to=v${toVersion}`;
       }
       const response = await fetch(url);
-      const data = await response.json();
+      const data = await response.json() as DiffResponse;
       if (response.ok) {
         setDiffData(data);
         // Set dropdown state to match response if it was default
@@ -39,16 +41,16 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ promptId, versions }) =>
       } else {
         setError(data.error || 'Failed to fetch diff.');
       }
-    } catch (e: any) {
-      setError(e.message || 'Connection error.');
+    } catch (e: unknown) {
+      setError(errorMessage(e, 'Connection error.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [fromVersion, promptId, toVersion]);
 
   useEffect(() => {
-    fetchDiff();
-  }, [promptId, fromVersion, toVersion]);
+    void fetchDiff();
+  }, [fetchDiff]);
 
   // Create selectable options sorted by version number ascending
   const sortedVersions = [...versions].sort((a, b) => a.version_number - b.version_number);
@@ -89,14 +91,14 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ promptId, versions }) =>
         <div className="diff-results-body">
           {diffData.message ? (
             <div className="empty-diff-msg mono font-12">{diffData.message}</div>
-          ) : (
+          ) : diffData.diff ? (
             <div className="diff-content-wrapper">
               <div className="diff-stats mono font-11">
                 <span className="add-count">+{diffData.diff.stats.wordsAdded || 0} WORDS</span>
                 <span className="remove-count">-{diffData.diff.stats.wordsRemoved || 0} WORDS</span>
               </div>
               <div className="word-diff-display mono">
-                {diffData.diff.wordDiff.map((chunk: any, index: number) => {
+                {diffData.diff.wordDiff.map((chunk, index) => {
                   if (chunk.added) {
                     return <span key={index} className="diff-added">{chunk.value}</span>;
                   }
@@ -107,7 +109,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ promptId, versions }) =>
                 })}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

@@ -188,7 +188,7 @@ PromptLog stores config at `.promptlog/config.json`. Key options:
 
 ## Requirements
 
-- Node.js >= 20
+- Node.js >= 22.13
 - npm
 
 ## License

@@ -1,8 +1,9 @@
 import React from 'react';
 import { VersionCard } from './VersionCard';
+import type { PromptVersion } from '../types';
 
 interface VersionTimelineProps {
-  versions: any[];
+  versions: PromptVersion[];
   onRollback: (versionNum: number) => void;
 }
 

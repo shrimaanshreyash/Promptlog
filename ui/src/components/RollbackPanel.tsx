@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ActionButton } from './ActionButton';
 import { RetroWindow } from './RetroWindow';
+import { errorMessage } from '../types';
+import type { ApiResult } from '../types';
 
 interface RollbackPanelProps {
   promptId: string;
@@ -33,15 +35,15 @@ export const RollbackPanel: React.FC<RollbackPanelProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ promptId, toVersion }),
         });
-        const data = await response.json();
-        if (response.ok && data.success) {
+        const data = await response.json() as ApiResult;
+        if (response.ok && data.success && typeof data.content === 'string' && typeof data.patchPath === 'string') {
           setPreviewContent(data.content);
           setPatchPath(data.patchPath);
         } else {
           setError(data.error || 'Failed to generate rollback patch.');
         }
-      } catch (e: any) {
-        setError(e.message || 'Connection error while generating patch.');
+      } catch (e: unknown) {
+        setError(errorMessage(e, 'Connection error while generating patch.'));
       } finally {
         setLoading(false);
       }
@@ -58,9 +60,9 @@ export const RollbackPanel: React.FC<RollbackPanelProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ promptId, toVersion }),
       });
-      const data = await response.json();
+      const data = await response.json() as ApiResult;
       if (response.ok && data.success) {
-        setSuccessMsg(data.message);
+        setSuccessMsg(data.message || `Rollback to v${toVersion} applied.`);
         // Automatically trigger scan on the backend to pick up the new version!
         await fetch('/api/scan', { method: 'POST' }).catch(err => console.error('Auto scan error:', err));
         setTimeout(() => {
@@ -70,8 +72,8 @@ export const RollbackPanel: React.FC<RollbackPanelProps> = ({
       } else {
         setError(data.error || 'Failed to apply rollback patch.');
       }
-    } catch (e: any) {
-      setError(e.message || 'Connection error while applying patch.');
+    } catch (e: unknown) {
+      setError(errorMessage(e, 'Connection error while applying patch.'));
     } finally {
       setLoading(false);
     }
@@ -84,8 +86,8 @@ export const RollbackPanel: React.FC<RollbackPanelProps> = ({
           <div className="alert-banner">
             <span className="alert-icon">⚠️</span>
             <div className="alert-text">
-              <strong className="mono">CAUTION: RESTORING SOURCE FILE</strong>
-              <p className="font-11">This will overwrite the source file for prompt "{promptName}" to match version <strong>v{toVersion}</strong>.</p>
+              <strong className="mono">CAUTION: RESTORING PROMPT CONTENT</strong>
+              <p className="font-11">This will replace only prompt "{promptName}" with version <strong>v{toVersion}</strong>.</p>
             </div>
           </div>
 

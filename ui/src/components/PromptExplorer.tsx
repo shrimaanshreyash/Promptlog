@@ -1,15 +1,5 @@
 import React from 'react';
-
-interface Prompt {
-  id: string;
-  project_id: string;
-  stable_name: string;
-  display_name: string;
-  prompt_type: string;
-  status: string;
-  first_seen_at: string;
-  last_seen_at: string;
-}
+import type { Prompt } from '../types';
 
 interface PromptExplorerProps {
   prompts: Prompt[];

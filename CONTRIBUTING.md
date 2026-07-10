@@ -28,7 +28,7 @@ node dist/index.js --help
 
 ## Guidelines
 
-- **Requirements:** Node.js >= 20.
+- **Requirements:** Node.js >= 22.13.
 - **Tests:** New behavior needs coverage. Bug fixes should add a regression test.
 - **Style:** Match the surrounding code. Run `npm run build` to catch type errors.
 - **Scope:** Prompt detection lives in `src/scanner/`, the CLI in `src/`, the dashboard in `ui/`.

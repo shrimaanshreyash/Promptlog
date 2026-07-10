@@ -27,6 +27,11 @@ describe('Server API', { timeout: 30000 }, () => {
       'export const userTemplate = `Given context, analyze the data and provide detailed findings.`;'
     );
     runCli('init');
+    fs.writeFileSync(path.join(testDir, 'src', 'prompts.ts'),
+      'export const systemPrompt = `You are a precise assistant. Follow all instructions and return valid JSON.`;\n' +
+      'export const userTemplate = `Given context, analyze the data and provide detailed findings.`;'
+    );
+    runCli('scan');
     port = 14319;
 
     const { spawn } = await import('child_process');
@@ -80,6 +85,25 @@ describe('Server API', { timeout: 30000 }, () => {
     const data = await fetchApi(`/api/prompts/${promptId}/versions`);
     expect(data.versions.length).toBeGreaterThanOrEqual(1);
     expect(data.versions[0].raw_content).toBeTruthy();
+  });
+
+  it('POST /api/rollback/apply replaces only the selected prompt span', async () => {
+    const prompts = await fetchApi('/api/prompts');
+    const prompt = prompts.prompts.find((item: any) => item.stable_name === 'prompts::systemPrompt');
+    const versions = await fetchApi(`/api/prompts/${prompt.id}/versions`);
+    expect(versions.versions.length).toBe(2);
+
+    const data = await fetchApi('/api/rollback/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ promptId: prompt.id, toVersion: 1 }),
+    });
+    expect(data.success).toBe(true);
+
+    const source = fs.readFileSync(path.join(testDir, 'src', 'prompts.ts'), 'utf8');
+    expect(source).toContain('You are a helpful assistant. Follow all instructions carefully and respond.');
+    expect(source).toContain('export const userTemplate');
+    expect(source).toContain('Given context, analyze the data and provide detailed findings.');
   });
 
   it('POST /api/prompts/:id/versions/:vid/notes creates note', async () => {

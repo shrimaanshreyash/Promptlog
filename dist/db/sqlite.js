@@ -25,6 +25,10 @@ function openDatabase(dbPath) {
     });
 }
 export function initDb(projectRoot) {
+    if (db) {
+        db.close();
+        db = null;
+    }
     const dbDir = path.join(projectRoot, '.promptlog');
     if (!fs.existsSync(dbDir)) {
         fs.mkdirSync(dbDir, { recursive: true });
@@ -39,4 +43,10 @@ export function getDb() {
     if (!db)
         throw new Error('Database not initialized');
     return db;
+}
+export function closeDb() {
+    if (!db)
+        return;
+    db.close();
+    db = null;
 }

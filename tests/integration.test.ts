@@ -3,6 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import os from 'os';
+import { getConfig } from '../src/config.js';
+import { closeDb, getDb, initDb } from '../src/db/sqlite.js';
+import { scanFiles } from '../src/scanner/index.js';
 
 const CLI = path.join(__dirname, '..', 'dist', 'index.js');
 
@@ -28,6 +31,7 @@ describe('CLI integration', () => {
   });
 
   afterEach(() => {
+    closeDb();
     fs.rmSync(testDir, { recursive: true, force: true });
   });
 
@@ -187,6 +191,39 @@ const short = "hi";
     run('init', testDir);
     const output = run('scan', testDir);
     expect(output).toContain('Files with prompts: 2');
+  });
+
+  it('tracks identical prompt content at separate locations in one file', () => {
+    writePromptFile(testDir, 'audio.ts', `
+const first = { role: "system", content: "You are an assistant that performs text-to-speech." };
+const second = { role: "system", content: "You are an assistant that performs text-to-speech." };
+`);
+    const output = run('init', testDir);
+    expect(output).toContain('Confirmed: 2');
+
+    const status = run('status', testDir);
+    expect(status).toContain('Prompts tracked: 2');
+  });
+
+  it('incremental scans mark prompts removed from a changed file', () => {
+    writePromptFile(testDir, 'prompts.ts', `
+export const systemPrompt = \`You are a helpful assistant. Follow all instructions carefully.\`;
+export const reviewPrompt = \`Review the supplied document and return detailed findings.\`;
+`);
+    run('init', testDir);
+
+    writePromptFile(testDir, 'prompts.ts', `
+export const reviewPrompt = \`Review the supplied document and return detailed findings.\`;
+`);
+    initDb(testDir);
+    const config = getConfig(testDir);
+    expect(config).not.toBeNull();
+    scanFiles(testDir, config!, [path.join(testDir, 'src', 'prompts.ts')]);
+
+    const removed = getDb().prepare(
+      "SELECT status FROM prompts WHERE stable_name = 'prompts::systemPrompt'"
+    ).get() as { status: string };
+    expect(removed.status).toBe('removed_from_codebase');
   });
 
   it('status shows correct counts', () => {
@@ -405,5 +442,20 @@ describe('quiet and verbose flags', () => {
   it('normal scan produces output', () => {
     const output = run('scan', testDir);
     expect(output).toContain('Scanning');
+  });
+
+  it('scan --json returns machine-readable scan results', () => {
+    writePromptFile(testDir, 'prompts.ts', 'export const systemPrompt = `You are a helpful assistant. Always respond accurately and follow guidelines.`;');
+    run('init', testDir);
+    const result = JSON.parse(run('scan --json', testDir));
+    expect(result.confirmed).toBe(1);
+    expect(result.filesScanned).toBeGreaterThan(0);
+  });
+
+  it('status uses the configured dashboard port', () => {
+    writePromptFile(testDir, 'prompts.ts', 'export const systemPrompt = `You are a helpful assistant. Always respond accurately and follow guidelines.`;');
+    run('init', testDir);
+    run('config set ui.defaultPort 5000', testDir);
+    expect(run('status', testDir)).toContain('http://localhost:5000');
   });
 });

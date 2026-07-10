@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ActionButton } from './ActionButton';
 import { RetroWindow } from './RetroWindow';
 import { formatLocalDateTime } from '../utils/time';
+import { errorMessage } from '../types';
+import type { ApiResult } from '../types';
 
 interface Note {
   id: string;
@@ -41,7 +43,7 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
   const [noteType, setNoteType] = useState('general_note');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const readJsonResponse = async (response: Response) => {
+  const readJsonResponse = async (response: Response): Promise<ApiResult> => {
     const text = await response.text();
     try {
       return text ? JSON.parse(text) : {};
@@ -50,27 +52,27 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
     }
   };
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetch(`/api/prompts/${promptId}/notes`);
-      const data = await response.json();
+      const data = await response.json() as { notes?: Note[]; error?: string };
       if (response.ok) {
         setNotes(data.notes || []);
       } else {
         setError(data.error || 'Failed to fetch notes.');
       }
-    } catch (e: any) {
-      setError(e.message || 'Connection error.');
+    } catch (e: unknown) {
+      setError(errorMessage(e, 'Connection error.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [promptId]);
 
   useEffect(() => {
-    fetchNotes();
-  }, [promptId]);
+    void fetchNotes();
+  }, [fetchNotes]);
 
   useEffect(() => {
     if (versions.length > 0 && !versions.some(v => v.id === targetVersionId)) {
@@ -105,8 +107,8 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
       } else {
         setError(data.error || 'Failed to create note.');
       }
-    } catch (e: any) {
-      setError(e.message || 'Connection error.');
+    } catch (e: unknown) {
+      setError(errorMessage(e, 'Connection error.'));
     }
   };
 
@@ -130,8 +132,8 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
       } else {
         setError(data.error || 'Failed to update note.');
       }
-    } catch (e: any) {
-      setError(e.message || 'Connection error.');
+    } catch (e: unknown) {
+      setError(errorMessage(e, 'Connection error.'));
     }
   };
 
@@ -148,8 +150,8 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
       } else {
         setError(data.error || 'Failed to delete note.');
       }
-    } catch (e: any) {
-      setError(e.message || 'Connection error.');
+    } catch (e: unknown) {
+      setError(errorMessage(e, 'Connection error.'));
     }
   };
 
@@ -207,8 +209,8 @@ export const NotesPanel: React.FC<NotesPanelProps> = ({ promptId, versions, onCl
       } else {
         setError(data.error || 'Bulk delete failed.');
       }
-    } catch (e: any) {
-      setError(e.message || 'Connection error.');
+    } catch (e: unknown) {
+      setError(errorMessage(e, 'Connection error.'));
     }
   };
 

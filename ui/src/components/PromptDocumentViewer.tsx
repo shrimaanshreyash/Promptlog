@@ -3,20 +3,11 @@ import { formatLocalDateTime } from '../utils/time';
 import { ActionButton } from './ActionButton';
 import { DiffViewer } from './DiffViewer';
 import { VersionTimeline } from './VersionTimeline';
-
-interface Prompt {
-  id: string;
-  stable_name: string;
-  display_name: string;
-  prompt_type: string;
-  status: string;
-  first_seen_at: string;
-  last_seen_at: string;
-}
+import type { Prompt, PromptVersion } from '../types';
 
 interface PromptDocumentViewerProps {
   prompt: Prompt;
-  versions: any[];
+  versions: PromptVersion[];
   onAddNote: () => void;
   onRollback: (versionNum: number) => void;
   onClassificationChange?: () => void;

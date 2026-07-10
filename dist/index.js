@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { initDb } from './db/sqlite.js';
 import { initConfig } from './config.js';
 import { scanProject } from './scanner/index.js';
@@ -17,10 +18,12 @@ import { showStatus } from './commands/status.js';
 import { configGet, configSet } from './commands/config.js';
 import { addPromptManually } from './commands/add.js';
 const program = new Command();
+const packagePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
+const packageVersion = JSON.parse(fs.readFileSync(packagePath, 'utf8')).version;
 program
     .name('plog')
     .description('Permanent prompt memory, visual diffs, and human notes for AI applications.')
-    .version('0.1.2')
+    .version(packageVersion)
     .option('-v, --verbose', 'Enable verbose output')
     .option('-q, --quiet', 'Suppress non-essential output');
 function setLogLevel() {
@@ -76,7 +79,7 @@ program.command('init')
         db.prepare(`
         INSERT INTO projects (id, name, root_path, promptlog_version)
         VALUES (?, ?, ?, ?)
-      `).run(projectId, config.project.name, projectRoot, '0.1.2');
+      `).run(projectId, config.project.name, projectRoot, packageVersion);
         db.prepare(`
         INSERT INTO prompt_events (id, project_id, event_type, created_by)
         VALUES (?, ?, ?, ?)
@@ -111,6 +114,21 @@ program.command('scan')
         config.scanner.include = [options.include];
     if (options.exclude)
         config.scanner.exclude = [options.exclude];
+    if (options.json) {
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        console.log = () => { };
+        console.warn = () => { };
+        try {
+            const result = scanProject(projectRoot, config);
+            process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+        }
+        finally {
+            console.log = originalLog;
+            console.warn = originalWarn;
+        }
+        return;
+    }
     console.log('🔍  Scanning project for prompts...\n');
     scanProject(projectRoot, config);
 });
@@ -147,9 +165,9 @@ program.command('status')
     .description('Show project status and prompt summary.')
     .action(() => {
     const projectRoot = process.cwd();
-    initConfig(projectRoot);
+    const config = initConfig(projectRoot);
     initDb(projectRoot);
-    showStatus(projectRoot);
+    showStatus(config.ui.defaultPort);
 });
 // ─── diff ─────────────────────────────────────────────────────────────────────
 program.command('diff <promptId>')

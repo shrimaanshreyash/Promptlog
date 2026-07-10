@@ -10,6 +10,7 @@ import { watchProject } from '../scanner/watch.js';
 import { exportData } from '../commands/export.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
+import { applyPromptRollback, RollbackApplyError, safePatchFileName } from '../rollback/apply.js';
 
 export function startServer(projectRoot: string, config: PromptLogConfig, port: number, host: string = '127.0.0.1') {
   const app = express();
@@ -447,7 +448,7 @@ export function startServer(projectRoot: string, config: PromptLogConfig, port: 
 
     const patchDir = path.join(projectRoot, '.promptlog', 'patches');
     fs.mkdirSync(patchDir, { recursive: true });
-    const patchName = `${prompt.stable_name}-v${toVersion}.patch`;
+    const patchName = safePatchFileName(prompt.stable_name, toVersion);
     const patchPath = path.join(patchDir, patchName);
 
     const patchContent = [
@@ -497,15 +498,18 @@ export function startServer(projectRoot: string, config: PromptLogConfig, port: 
     ).get(promptId, toVersion) as any;
     if (!version) return res.status(404).json({ error: `Version v${toVersion} not found` });
 
-    const sourceFile = path.join(projectRoot, version.source_file);
-    if (!fs.existsSync(sourceFile)) {
-      return res.status(400).json({
-        error: `Source file not found: ${version.source_file}. Cannot apply rollback.`,
-      });
-    }
+    const currentVersion = db.prepare(
+      'SELECT * FROM prompt_versions WHERE id = ?'
+    ).get(prompt.current_version_id) as any;
+    if (!currentVersion) return res.status(409).json({ error: 'Current prompt version not found. Re-scan and try again.' });
 
-    // Write the content to source file
-    fs.writeFileSync(sourceFile, version.raw_content, 'utf8');
+    let applied;
+    try {
+      applied = applyPromptRollback(projectRoot, currentVersion, version);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Rollback could not be applied safely.';
+      return res.status(err instanceof RollbackApplyError ? 409 : 500).json({ error: message });
+    }
 
     // Log event
     const projectInfo = db.prepare('SELECT id FROM projects LIMIT 1').get() as any;
@@ -516,15 +520,15 @@ export function startServer(projectRoot: string, config: PromptLogConfig, port: 
       `).run(
         uuidv4(), projectInfo.id, promptId, version.id,
         'rollback_applied',
-        JSON.stringify({ toVersion, sourceFile: version.source_file }),
+        JSON.stringify({ toVersion, sourceFile: applied.relativeSourceFile, startLine: applied.startLine }),
         'user'
       );
     }
 
     res.json({
       success: true,
-      message: `Rollback applied. ${version.source_file} restored to v${toVersion}. Re-scan to record the new version.`,
-      sourceFile: version.source_file,
+      message: `Rollback applied at ${applied.relativeSourceFile}:${applied.startLine}-${applied.endLine}. Re-scan to record the new version.`,
+      sourceFile: applied.relativeSourceFile,
     });
   });
 

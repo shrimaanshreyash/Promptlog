@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import './index.css';
 import { TopPdfToolbar } from './components/TopPdfToolbar';
 import { PromptExplorer } from './components/PromptExplorer';
@@ -8,12 +8,14 @@ import { NotesPanel } from './components/NotesPanel';
 import { RollbackPanel } from './components/RollbackPanel';
 import { ExportPanel } from './components/ExportPanel';
 import { ActivityFeed } from './components/ActivityFeed';
+import type { Project, Prompt, PromptVersion } from './types';
 
 function App() {
-  const [project, setProject] = useState<any>(null);
-  const [prompts, setPrompts] = useState<any[]>([]);
-  const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
-  const [versions, setVersions] = useState<any[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const selectedPromptRef = useRef<Prompt | null>(null);
+  const [versions, setVersions] = useState<PromptVersion[]>([]);
 
   // Filtering states
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,14 +36,14 @@ function App() {
   const loadVersions = useCallback(async (promptId: string) => {
     try {
       const r = await fetch(`/api/prompts/${promptId}/versions`);
-      const d = await r.json();
+      const d = await r.json() as { versions?: PromptVersion[] };
       setVersions(d.versions || []);
     } catch (e) {
       console.error('Failed to load versions:', e);
     }
   }, []);
 
-  const [allPrompts, setAllPrompts] = useState<any[]>([]);
+  const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
 
   // Load all prompts, filter client-side for display
   const loadPrompts = useCallback(async () => {
@@ -51,40 +53,41 @@ function App() {
         url += `&search=${encodeURIComponent(searchTerm)}`;
       }
       const r = await fetch(url);
-      const d = await r.json();
+      const d = await r.json() as { prompts?: Prompt[] };
       const all = d.prompts || [];
       setAllPrompts(all);
 
       const filtered = statusFilter === 'all'
         ? all
-        : all.filter((p: any) => p.status === statusFilter);
+        : all.filter(p => p.status === statusFilter);
       setPrompts(filtered);
       setActivityTick(t => t + 1);
 
-      if (selectedPrompt) {
-        const found = all.find((p: any) => p.id === selectedPrompt.id);
+      if (selectedPromptRef.current) {
+        const found = all.find(p => p.id === selectedPromptRef.current?.id);
         if (found) {
+          selectedPromptRef.current = found;
           setSelectedPrompt(found);
-          loadVersions(found.id);
+          void loadVersions(found.id);
         }
       }
     } catch (e) {
       console.error('Failed to load prompts:', e);
     }
-  }, [statusFilter, searchTerm, selectedPrompt, loadVersions]);
+  }, [statusFilter, searchTerm, loadVersions]);
 
   // Load project details
   useEffect(() => {
     fetch('/api/project')
       .then(r => r.json())
-      .then(d => setProject(d.project))
+      .then((d: { project: Project }) => setProject(d.project))
       .catch(e => console.error('Failed to load project details:', e));
   }, []);
 
   // Reload prompts list when filters change
   useEffect(() => {
-    loadPrompts();
-  }, [statusFilter, searchTerm]);
+    void loadPrompts();
+  }, [loadPrompts]);
 
   // Establish SSE Connection
   useEffect(() => {
@@ -106,12 +109,12 @@ function App() {
 
       sse.addEventListener('scan_complete', () => {
         console.log('[SSE] Scan complete event received. Refreshing...');
-        loadPrompts();
+        void loadPrompts();
       });
 
       sse.addEventListener('prompt_version_created', () => {
         console.log('[SSE] Prompt version created event received. Refreshing...');
-        loadPrompts();
+        void loadPrompts();
       });
     };
 
@@ -137,8 +140,9 @@ function App() {
           allPrompts={allPrompts}
           selectedPromptId={selectedPrompt ? selectedPrompt.id : null}
           onSelectPrompt={(p) => {
+            selectedPromptRef.current = p;
             setSelectedPrompt(p);
-            loadVersions(p.id);
+            void loadVersions(p.id);
           }}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -181,7 +185,7 @@ function App() {
           toVersion={rollbackVersion}
           onClose={() => setRollbackVersion(null)}
           onSuccess={() => {
-            loadPrompts();
+            void loadPrompts();
             if (selectedPrompt) {
               loadVersions(selectedPrompt.id);
             }

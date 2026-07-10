@@ -18,5 +18,9 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // PromptLog loads local API state in effects; this is an intentional synchronization boundary.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

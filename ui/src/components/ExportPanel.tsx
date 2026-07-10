@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ActionButton } from './ActionButton';
 import { RetroWindow } from './RetroWindow';
+import { errorMessage } from '../types';
+import type { ApiResult } from '../types';
 
 interface ExportPanelProps {
   onClose: () => void;
@@ -20,14 +22,14 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ format }),
       });
-      const data = await response.json();
+      const data = await response.json() as ApiResult;
       if (data.success) {
         setResult(`SUCCESS: EXPORTED TO .promptlog/exports/ IN ${format.toUpperCase()} FORMAT`);
       } else {
         setResult(`ERROR: ${data.error || 'FAILED TO EXPORT'}`);
       }
-    } catch (e: any) {
-      setResult(`ERROR: ${e.message || 'CONNECTION REFUSED'}`);
+    } catch (e: unknown) {
+      setResult(`ERROR: ${errorMessage(e, 'CONNECTION REFUSED')}`);
     } finally {
       setLoading(false);
     }

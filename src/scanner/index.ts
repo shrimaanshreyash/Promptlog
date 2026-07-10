@@ -238,20 +238,7 @@ function deduplicatePrompts(prompts: DetectedPrompt[]): DetectedPrompt[] {
       }
     }
   }
-  const byHash = new Map<string, DetectedPrompt>();
-  for (const p of byName.values()) {
-    const hk = `${p.file_path}::${hashContent(p.content)}`;
-    const existing = byHash.get(hk);
-    if (!existing) {
-      byHash.set(hk, p);
-    } else {
-      const rank = { high: 3, medium: 2, low: 1 };
-      if (rank[p.confidence] > rank[existing.confidence]) {
-        byHash.set(hk, p);
-      }
-    }
-  }
-  return [...byHash.values()];
+  return [...byName.values()];
 }
 
 // ─── Prompt-like variable/field name patterns ──────────────────────────────────
@@ -413,6 +400,8 @@ export function scanFiles(projectRoot: string, config: PromptLogConfig, filePath
   const db = getDb();
   const gitMeta = getGitMetadata(projectRoot);
   const result: ScanResult = { confirmed: 0, candidates: 0, rejected: 0, filesScanned: filePaths.length, filesWithPrompts: 0 };
+  const seenStableNames = new Set<string>();
+  const scannedFiles = new Set<string>();
 
   for (const file of filePaths) {
     const absPath = path.isAbsolute(file) ? file : path.join(projectRoot, file);
@@ -422,9 +411,11 @@ export function scanFiles(projectRoot: string, config: PromptLogConfig, filePath
     if (fileSize > 512_000) continue;
 
     try {
+      const relPath = path.relative(projectRoot, absPath).replace(/\\/g, '/');
       const content = fs.readFileSync(absPath, 'utf8');
       const rawPrompts = detectPromptsInFile(projectRoot, absPath, ext, content);
       const classified = deduplicatePrompts(rawPrompts.map(classify));
+      scannedFiles.add(relPath);
 
       const saved = classified.filter(p => p.classification !== 'rejected');
       if (saved.length > 0) result.filesWithPrompts++;
@@ -434,6 +425,7 @@ export function scanFiles(projectRoot: string, config: PromptLogConfig, filePath
           result.rejected++;
           continue;
         }
+        seenStableNames.add(prompt.stable_name);
         savePromptDetection(projectRoot, prompt, gitMeta);
         if (prompt.classification === 'confirmed') result.confirmed++;
         else result.candidates++;
@@ -443,6 +435,7 @@ export function scanFiles(projectRoot: string, config: PromptLogConfig, filePath
     }
   }
 
+  markRemovedPromptsInFiles(scannedFiles, seenStableNames);
   trackManualPrompts(projectRoot);
   return result;
 }
@@ -997,6 +990,35 @@ function markRemovedPrompts(seenStableNames: Set<string>): void {
       `).run(uuidv4(), projectInfo.id, prompt.id, 'prompt_removed_from_codebase', 'scanner');
       console.log(`  [REM] ${prompt.stable_name}`);
     }
+  }
+}
+
+function markRemovedPromptsInFiles(scannedFiles: Set<string>, seenStableNames: Set<string>): void {
+  if (scannedFiles.size === 0) return;
+  const db = getDb();
+  const projectInfo = db.prepare('SELECT id FROM projects LIMIT 1').get() as { id: string } | undefined;
+  if (!projectInfo) return;
+
+  const placeholders = [...scannedFiles].map(() => '?').join(', ');
+  const prompts = db.prepare(`
+    SELECT p.id, p.stable_name, p.prompt_type
+    FROM prompts p
+    JOIN prompt_versions v ON v.id = p.current_version_id
+    WHERE p.project_id = ?
+      AND p.status IN ('active', 'candidate')
+      AND v.source_file IN (${placeholders})
+  `).all(projectInfo.id, ...scannedFiles) as { id: string; stable_name: string; prompt_type: string }[];
+
+  for (const prompt of prompts) {
+    if (prompt.prompt_type === 'manual' || seenStableNames.has(prompt.stable_name)) continue;
+    db.prepare(
+      "UPDATE prompts SET status = 'removed_from_codebase', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    ).run(prompt.id);
+    db.prepare(`
+      INSERT INTO prompt_events (id, project_id, prompt_id, event_type, created_by)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(uuidv4(), projectInfo.id, prompt.id, 'prompt_removed_from_codebase', 'scanner');
+    console.log(`  [REM] ${prompt.stable_name}`);
   }
 }
 

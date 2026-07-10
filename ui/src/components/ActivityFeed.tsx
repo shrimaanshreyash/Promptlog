@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { parseUtcTimestamp } from '../utils/time';
 
 interface ActivityEvent {
@@ -8,6 +8,15 @@ interface ActivityEvent {
   display_name?: string;
   created_at: string;
   event_payload_json?: string;
+}
+
+interface EventPayload {
+  versionNumber?: number;
+  toVersion?: number;
+  classification?: string;
+  detection_method?: string;
+  sourceFile?: string;
+  patchPath?: string;
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -46,19 +55,19 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ refreshTrigger }) =>
   const feedRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const r = await fetch('/api/events?limit=50');
-      const d = await r.json();
+      const d = await r.json() as { events?: ActivityEvent[] };
       setEvents(d.events || []);
     } catch (e) {
       console.error('Failed to load events:', e);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadEvents();
-  }, [refreshTrigger]);
+    void loadEvents();
+  }, [loadEvents, refreshTrigger]);
 
   useEffect(() => {
     if (events.length > prevCountRef.current && feedRef.current) {
@@ -81,10 +90,11 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ refreshTrigger }) =>
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' }).toUpperCase();
   };
 
-  const getPayload = (evt: ActivityEvent) => {
+  const getPayload = (evt: ActivityEvent): EventPayload | null => {
     if (!evt.event_payload_json) return null;
     try {
-      return JSON.parse(evt.event_payload_json);
+      const parsed: unknown = JSON.parse(evt.event_payload_json);
+      return parsed && typeof parsed === 'object' ? parsed as EventPayload : null;
     } catch { return null; }
   };
 

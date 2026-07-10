@@ -2,21 +2,10 @@ import React, { useState } from 'react';
 import { RetroWindow } from './RetroWindow';
 import { ActionButton } from './ActionButton';
 import { formatLocalDateTime } from '../utils/time';
+import type { PromptVersion } from '../types';
 
 interface VersionCardProps {
-  version: {
-    id: string;
-    version_number: number;
-    raw_content: string;
-    source_file: string;
-    git_branch: string | null;
-    git_commit: string | null;
-    git_author: string | null;
-    git_dirty_state: number | null;
-    created_at: string;
-    start_line: number;
-    end_line: number;
-  };
+  version: PromptVersion;
   onRollback: (versionNum: number) => void;
   isLatest: boolean;
 }
