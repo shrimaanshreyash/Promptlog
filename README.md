@@ -11,11 +11,7 @@ Permanent prompt memory, visual diffs, and human notes for AI applications.
 
 PromptLog scans your codebase for LLM prompts, tracks every change as a versioned snapshot, and gives you a local dashboard to compare diffs, add human notes, and rollback when things break.
 
-<p align="center">
-  <a href=".github/assets/promptlog-demo.mp4">
-    <img src=".github/assets/promptlog-demo-poster.jpg" alt="PromptLog dashboard showing prompt version history and a visual diff" width="100%">
-  </a>
-</p>
+
 
 <p align="center"><strong><a href=".github/assets/promptlog-demo.mp4">Watch the 2-minute PromptLog demo</a></strong></p>
 
